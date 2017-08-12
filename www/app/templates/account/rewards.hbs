@@ -1,6 +1,8 @@
+
 <div class="container">
   {{#if model.rewards}}
   <h4>Your Latest Rewards</h4>
+  <div class="table-responsive
    <table class="table table-condensed table-striped">
   {{#each model.sumrewards as |sumreward|}}
   <tr>
@@ -34,6 +36,7 @@
       {{/each}}
     </tbody>
   </table>
+</div>
   {{else}}
   <h3>No rewards yet</h3>
   {{/if}}
