@@ -4,3 +4,5 @@ testnet.json
 
 /build/_workspace/
 /build/bin/
+/www/nbproject/private/
+/.idea/

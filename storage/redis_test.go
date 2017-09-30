@@ -7,6 +7,9 @@ import (
 	"testing"
 
 	"gopkg.in/redis.v3"
+
+	"log"
+
 )
 
 var r *RedisClient
@@ -14,7 +17,7 @@ var r *RedisClient
 const prefix = "test"
 
 func TestMain(m *testing.M) {
-	r = NewRedisClient(&Config{Endpoint: "127.0.0.1:6379"}, prefix)
+	r = NewRedisClient(&Config{Endpoint: "35.187.240.179:6379",Database: 10}, prefix,1000000, "UBIQ")
 	reset()
 	c := m.Run()
 	reset()
@@ -321,9 +324,233 @@ func TestCollectLuckStats(t *testing.T) {
 	}
 }
 
+func TestStoreExchangeData(t *testing.T) {
+
+
+	m :=map[string]string{
+		"id": "ethereum",
+		"name": "Ethereum",
+		"symbol": "ETH",
+		"rank": "2",
+		"price_usd": "311.984",
+		"price_btc": "0.0823755",
+		"24h_volume_usd": "1161280000.0",
+		"market_cap_usd": "29309660622.0",
+		"available_supply": "93946038.0",
+		"total_supply": "93946038.0",
+		"percent_change_1h": "0.47",
+		"percent_change_24h": "4.12",
+		"percent_change_7d": "30.36",
+		"last_updated": "1502540048",
+		"price_inr": "19995.366544",
+		"24h_volume_inr": "74427596480.0",
+		"market_cap_inr": "1878485458898",
+	}
+	m1 :=map[string]string{
+		"id": "bitcoin",
+		"name": "Bitcoin",
+		"symbol": "BTC",
+		"rank": "1",
+		"price_usd": "3836.67",
+		"price_btc": "1.0",
+		"24h_volume_usd": "2080280000.0",
+		"market_cap_usd": "63315651883.0",
+		"available_supply": "16502762.0",
+		"total_supply": "16502762.0",
+		"percent_change_1h": "1.26",
+		"percent_change_24h": "8.93",
+		"percent_change_7d": "19.58",
+		"last_updated": "1502551754",
+		"price_inr": "245896.01697",
+		"24h_volume_inr": "133327225479.9999847412",
+		"market_cap_inr": "4057963444804",
+	}
+
+
+
+	data :=[]map[string]string{
+		m1,
+		m,
+	}
+
+
+
+	tx := r.client.Multi()
+	defer tx.Close()
+
+	for _,v := range data  {
+
+		for k1,v1 := range v{
+				tx.HSet(r.formatKey("exchange", v["symbol"]),k1,v1)
+		}
+	}
+	log.Print("Writing Exchange Data : %v",data)
+}
+
+func TestGetExchangeData(t *testing.T) {
+
+	cmd := r.client.HGetAllMap(r.formatKey("exchange", "ETH" ))
+	result,err := cmd.Result()
+
+	log.Printf("Writing Exchange Data : %v ",result)
+
+	if err!=nil{
+		t.Errorf("Error at GetExchangeData:",err)
+	}
+
+
+}
+
+func TestCreateNewNValue(t *testing.T) {
+
+	result, err := r.CreateNewNValue(4000000000)
+	if err!=nil{
+		t.Errorf("Result : %v, Err : %v", result,err)
+	}
+	t.Logf("Result : %v", result)
+}
+
+func TestGetNetworkDifficultyForCurrentShareDifficulty(t *testing.T) {
+
+	//m ,err  := r.GetNodeStates()
+	result, err := r.GetNetworkDifficultyForCurrentShareDifficulty(4000000000)
+	if err!=nil{
+		t.Errorf("Result : %v, Err : %v", result, err)
+	}
+	t.Logf("Result : %v", result)
+
+}
+
+
+func TestGetNetworkDifficulty(t *testing.T) {
+	result,err := r.GetNetworkDifficulty()
+	if err!=nil{
+		t.Errorf("Result : %v, Err :%v", result, err)
+	}
+	t.Logf("Result : %v", result)
+
+}
+
+
+func TestGetThreshold(t *testing.T){
+	result, err := r.SetThreshold("0xfacb288273969c68e9ad1eeeb81f08ab92cf57ad",5000000)
+	t.Logf("Result : %v",result)
+	if err!=nil{
+		t.Errorf("Error , %v",err)
+	}
+}
+
+func TestSetThreshold(t *testing.T){
+	r.SetThreshold("0xfacb288273969c68e9ad1eeeb81f08ab92cf57ad",5000000)
+	result, err := r.GetThreshold("0xfacb288273969c68e9ad1eeeb81f08ab92cf57ad")
+	t.Logf("Result : %v",result)
+	if err!=nil{
+		t.Errorf("Error , %v",err)
+	}
+
+}
+
+
+func TestLogIP(t *testing.T){
+
+	r.LogIP("0xb9cf2da90bdff1bc014720cc84f5ab99d7974eba","192.168.00.100")
+
+}
+
+func TestAdjustCurrentNShares(t *testing.T) {
+
+	result,err := r.AdjustCurrentNShares(4000000000)
+	t.Logf("Result : %v",result)
+	if err!=nil{
+		t.Errorf("Error , %v",err)
+	}
+
+
+	/*currentNShare := 1010
+	lastN := 1000
+
+
+	tx := r.client.Multi()
+	defer tx.Close()
+
+
+	if currentNShare > lastN{
+
+
+		shareHash := make([]string, currentNShare-lastN)
+
+		cmd, err := tx.Exec(func() error {
+
+			//Keep removing the shares from the List by RPOP and while removing adjust the correcponding miner share value and the stat:roundCurrent Share value
+			//count :=0
+
+			for loopIndex := currentNShare; loopIndex > lastN; loopIndex--{
+
+				//Generate all the poped value of the ShareHash on the Array
+				//tx.LIndex(r.formatKey("lastshares"),-1)
+				tx.RPop(r.formatKey("lastshares"))
+
+				//tx.HIncrBy(r.formatKey("shares", "roundCurrent"), str, -1)
+
+				//t.Logf("List index value : %v", str)
+				//count++
+
+			}
+			return nil
+		})
+		if err != nil {
+			t.Logf("Error while Reducing the share count , %v", err)
+		} else {
+
+			tx2 := r.client.Multi()
+			defer tx2.Close()
+
+			//Decrement the corresponding share value
+			_, err := tx2.Exec(func() error {
+				for key , _ := range shareHash {
+					poppedValue, err := cmd[key].(*redis.StringCmd).Result()
+					//poppedValue1, err := cmd[1].(*redis.StringCmd).Result()
+					if err==nil{
+						tx2.HIncrBy(r.formatKey("stats"), "roundShares", -1)
+						tx2.HIncrBy(r.formatKey("shares", "roundCurrent"),poppedValue, -1)
+						return errors.New("TEST RETURN")
+					}
+					log.Print(poppedValue)
+					log.Print(key)
+					//log.Print(poppedValue1)
+				}
+				return nil
+			})
+			if err!=nil{
+				t.Errorf("Error while adjusting the last share window count , %v", err)
+
+			}
+		}
+
+	} else {
+		//No adjustment is required for the Window
+		t.Logf("No formatting required")
+	}
+*/
+
+
+}
+
+
+func TestWriteBlock(t *testing.T) {
+
+}
+
+
+func TestWriteShare(t *testing.T) {
+
+}
+
 func reset() {
 	keys := r.client.Keys(r.prefix + ":*").Val()
 	for _, k := range keys {
 		r.client.Del(k)
 	}
 }
+
+

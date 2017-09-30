@@ -2,10 +2,11 @@
 	"threads": 2,
 	"coin": "eth-pplns",
 	"name": "main",
-        "pplns": 1000,
+    "pplns": 1000,
+	"coin-name":"ETH",
 
 	"proxy": {
-		"enabled": true,
+		"enabled": false,
 		"listen": "0.0.0.0:8888",
 		"limitHeadersSize": 1024,
 		"limitBodySize": 256,
@@ -19,15 +20,8 @@
 		"maxFails": 100,
 
 		"stratum": {
-			"enabled": true,
+			"enabled": false,
 			"listen": "0.0.0.0:8008",
-			"timeout": "120s",
-			"maxConn": 8192
-		},
-
-		"stratum_nice_hash": {
-			"enabled": true,
-			"listen": "0.0.0.0:8088",
 			"timeout": "120s",
 			"maxConn": 8192
 		},
@@ -71,18 +65,18 @@
 	"upstream": [
 		{
 			"name": "main",
-			"url": "http://127.0.0.1:8545",
+			"url": "http://10.148.0.2:8545",
 			"timeout": "10s"
 		},
 		{
 			"name": "backup",
-			"url": "http://127.0.0.2:8545",
+			"url": "http://10.148.0.2:8545",
 			"timeout": "10s"
 		}
 	],
 
 	"redis": {
-		"endpoint": "127.0.0.1:6379",
+		"endpoint": "10.148.0.3:6379",
 		"poolSize": 10,
 		"database": 0,
 		"password": ""
@@ -117,14 +111,13 @@
 
 	"exchange": {
 		"enabled": true,
-		"name": "ETH_INR",
-		"url": "https://ethexindia.com/api/",
-		"timeout": "10s",
-		"refreshInterval": "120s"
+		"url": "https://api.coinmarketcap.com/v1/ticker/?convert=INR&limit=10",
+		"timeout": "50s",
+		"refreshInterval": "1800s"
 		},
 
-	"newrelicEnabled": false,
-	"newrelicName": "MyEtherProxy",
-	"newrelicKey": "SECRET_KEY",
-	"newrelicVerbose": false
+	"newrelicEnabled": true,
+	"newrelicName": "API",
+	"newrelicKey": "b30cd005408cbe2bcef6e081dc0a7ea2fe6c6a18",
+	"newrelicVerbose": true
 }

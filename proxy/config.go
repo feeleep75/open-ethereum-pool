@@ -1,10 +1,12 @@
 package proxy
 
 import (
-	"github.com/feeleep75/open-ethereum-pool/api"
-	"github.com/feeleep75/open-ethereum-pool/payouts"
-	"github.com/feeleep75/open-ethereum-pool/policy"
-	"github.com/feeleep75/open-ethereum-pool/storage"
+	"github.com/techievee/open-ethereum-pool/api"
+	"github.com/techievee/open-ethereum-pool/payouts"
+	"github.com/techievee/open-ethereum-pool/policy"
+	"github.com/techievee/open-ethereum-pool/storage"
+	"github.com/techievee/open-ethereum-pool/exchange"
+
 )
 
 type Config struct {
@@ -18,10 +20,13 @@ type Config struct {
 
 	Coin  string         `json:"coin"`
     Pplns int64          `json:"pplns"`
+	CoinName  string         `json:"coin-name"`
 	Redis storage.Config `json:"redis"`
 
 	BlockUnlocker payouts.UnlockerConfig `json:"unlocker"`
 	Payouts       payouts.PayoutsConfig  `json:"payouts"`
+
+	Exchange  exchange.ExchangeConfig `json:"exchange"`
 
 	NewrelicName    string `json:"newrelicName"`
 	NewrelicKey     string `json:"newrelicKey"`
@@ -46,9 +51,18 @@ type Proxy struct {
 	HealthCheck bool  `json:"healthCheck"`
 
 	Stratum Stratum `json:"stratum"`
+
+	StratumNiceHash StratumNiceHash `json:"stratum_nice_hash"`
 }
 
 type Stratum struct {
+	Enabled bool   `json:"enabled"`
+	Listen  string `json:"listen"`
+	Timeout string `json:"timeout"`
+	MaxConn int    `json:"maxConn"`
+}
+
+type StratumNiceHash struct {
 	Enabled bool   `json:"enabled"`
 	Listen  string `json:"listen"`
 	Timeout string `json:"timeout"`
@@ -60,3 +74,4 @@ type Upstream struct {
 	Url     string `json:"url"`
 	Timeout string `json:"timeout"`
 }
+

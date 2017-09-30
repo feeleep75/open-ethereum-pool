@@ -21,6 +21,7 @@ func (s *ProxyServer) processShare(login, id, ip string, t *BlockTemplate, param
 
 	h, ok := t.headers[hashNoNonce]
 	if !ok {
+		//TODO:Store stale share in Redis
 		log.Printf("Stale share from %v@%v", login, ip)
 		return false, false
 	}
@@ -45,6 +46,9 @@ func (s *ProxyServer) processShare(login, id, ip string, t *BlockTemplate, param
 		return false, false
 	}
 
+	//Write the Ip address into the settings:login:ipaddr and timeit added to settings:login:iptime hash
+	s.backend.LogIP(login,ip)
+
 	if hasher.Verify(block) {
 		ok, err := s.rpc().SubmitBlock(params)
 		if err != nil {
@@ -56,7 +60,8 @@ func (s *ProxyServer) processShare(login, id, ip string, t *BlockTemplate, param
 			s.fetchBlockTemplate()
 			exist, err := s.backend.WriteBlock(login, id, params, shareDiff, h.diff.Int64(), h.height, s.hashrateExpiration)
 			if exist {
-				return true, false
+				
+                                return true, false
 			}
 			if err != nil {
 				log.Println("Failed to insert block candidate into backend:", err)

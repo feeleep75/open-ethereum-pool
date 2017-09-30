@@ -13,10 +13,10 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/feeleep75/open-ethereum-pool/policy"
-	"github.com/feeleep75/open-ethereum-pool/rpc"
-	"github.com/feeleep75/open-ethereum-pool/storage"
-	"github.com/feeleep75/open-ethereum-pool/util"
+	"github.com/techievee/open-ethereum-pool/policy"
+	"github.com/techievee/open-ethereum-pool/rpc"
+	"github.com/techievee/open-ethereum-pool/storage"
+	"github.com/techievee/open-ethereum-pool/util"
 )
 
 type ProxyServer struct {
@@ -31,9 +31,16 @@ type ProxyServer struct {
 	failsCount         int64
 
 	// Stratum
-	sessionsMu sync.RWMutex
-	sessions   map[*Session]struct{}
-	timeout    time.Duration
+	sessionsMu         sync.RWMutex
+	sessions           map[*Session]struct{}
+	timeout            time.Duration
+	Extranonce         string
+}
+
+type jobDetails struct {
+	JobID string
+	SeedHash string
+	HeaderHash string
 }
 
 type Session struct {
@@ -44,6 +51,8 @@ type Session struct {
 	sync.Mutex
 	conn  *net.TCPConn
 	login string
+	subscriptionID string
+	JobDeatils jobDetails
 }
 
 func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
@@ -65,6 +74,10 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 	if cfg.Proxy.Stratum.Enabled {
 		proxy.sessions = make(map[*Session]struct{})
 		go proxy.ListenTCP()
+	}
+
+	if cfg.Proxy.StratumNiceHash.Enabled {
+		go proxy.ListenNiceHashTCP()
 	}
 
 	proxy.fetchBlockTemplate()
@@ -224,7 +237,7 @@ func (cs *Session) handleMessage(s *ProxyServer, r *http.Request, req *JSONRpcRe
 		return
 	}
 	if !s.policy.ApplyLoginPolicy(login, cs.ip) {
-		errReply := &ErrorReply{Code: -1, Message: "You are blacklisted"}
+		errReply := &ErrorReply{Code: -1, Message: "You are blacklisted, please contact helpdesk with your details"}
 		cs.sendError(req.Id, errReply)
 		return
 	}
