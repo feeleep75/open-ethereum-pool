@@ -10,9 +10,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/feeleep75/open-ethereum-pool/rpc"
-	"github.com/feeleep75/open-ethereum-pool/storage"
-	"github.com/feeleep75/open-ethereum-pool/util"
+	"github.com/slavserver/open-ethereum-pool/rpc"
+	"github.com/slavserver/open-ethereum-pool/storage"
+	"github.com/slavserver/open-ethereum-pool/util"
 )
 
 type UnlockerConfig struct {
