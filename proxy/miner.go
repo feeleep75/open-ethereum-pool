@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ethereum/ethash"
+	"github.com/Yuriy0803/ethash"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -18,7 +18,7 @@ func (s *ProxyServer) processShare(login, id, ip string, t *BlockTemplate, param
 	mixDigest := params[2]
 	nonce, _ := strconv.ParseUint(strings.Replace(nonceHex, "0x", "", -1), 16, 64)
 	shareDiff := s.config.Proxy.Difficulty
-
+	
 	h, ok := t.headers[hashNoNonce]
 	if !ok {
 		log.Printf("Stale share from %v@%v", login, ip)
@@ -28,33 +28,27 @@ func (s *ProxyServer) processShare(login, id, ip string, t *BlockTemplate, param
 	share := Block{
 		number:      h.height,
 		hashNoNonce: common.HexToHash(hashNoNonce),
-		difficulty:  big.NewInt(shareDiff),
-		nonce:       nonce,
-		mixDigest:   common.HexToHash(mixDigest),
-	}
-
-	block := Block{
-		number:      h.height,
-		hashNoNonce: common.HexToHash(hashNoNonce),
 		difficulty:  h.diff,
 		nonce:       nonce,
 		mixDigest:   common.HexToHash(mixDigest),
 	}
 
-	if !hasher.Verify(share) {
+	isShare, isBlock, actualDiff, _ := hasher.VerifyShare(share, big.NewInt(shareDiff))
+
+	if !isShare {
 		return false, false
 	}
 
-	if hasher.Verify(block) {
+	if isBlock {
 		ok, err := s.rpc().SubmitBlock(params)
-		if err != nil {
-			log.Printf("Block submission failure at height %v for %v: %v", h.height, t.Header, err)
+		if err != nil {			
+			log.Printf("Block submission failure at height %v for %v: %v", h.height, t.Header, err)		
 		} else if !ok {
 			log.Printf("Block rejected at height %v for %v", h.height, t.Header)
 			return false, false
 		} else {
 			s.fetchBlockTemplate()
-			exist, err := s.backend.WriteBlock(login, id, params, shareDiff, h.diff.Int64(), h.height, s.hashrateExpiration)
+			exist, err := s.backend.WriteBlock(login, id, params, shareDiff, actualDiff, h.diff.Int64(), h.height, t.Height, s.hashrateExpiration)
 			if exist {
 				return true, false
 			}
@@ -66,7 +60,8 @@ func (s *ProxyServer) processShare(login, id, ip string, t *BlockTemplate, param
 			log.Printf("Block found by miner %v@%v at height %d", login, ip, h.height)
 		}
 	} else {
-		exist, err := s.backend.WriteShare(login, id, params, shareDiff, h.height, s.hashrateExpiration)
+		
+		exist, err := s.backend.WriteShare(login, id, params, shareDiff, actualDiff, h.diff.Int64(), h.height, t.Height, s.hashrateExpiration)
 		if exist {
 			return true, false
 		}
